@@ -47,13 +47,14 @@ class RunStatistics:
         self,
         fig: None | Figure = None,
         ax: None | Axes = None,
+        **options,
     ) -> tuple[Figure, Axes]:
         fig = fig or plt.figure()
         ax = ax or fig.gca()
 
-        ax.hist(self.filtered_data)
-        ax.set_xlabel('Number of runs')
-        ax.set_ylabel('Probability density function')
+        ax.hist(self.filtered_data, **options)
+        ax.set_xlabel('Number of guesses')
+        ax.set_ylabel('Count')
         ax.set_title(f'Performance of {self.bottype} - Completion {self.completion_percentage:0.0f} %')
 
         _, q25, median, q75, __ = self.quarentiles
@@ -102,6 +103,6 @@ if __name__ == '__main__':
 
     sample = [game.run() for _ in range(100)]
 
-    stats = RunStatistics(type(bot), sample)
+    print(stats := RunStatistics(type(bot), sample))
     stats.plot()
-    plt.show()
+    # plt.show()

@@ -48,7 +48,7 @@ class LinearSearchBot(Bot):
 
     def restart(self, maximum_target: int) -> None:
         super().restart(maximum_target)
-        self.guesser = itertools.count()
+        self.guesser = itertools.count(1)
 
     def get_guess(self, _: str) -> int:
         return self.guesser.__next__()
