@@ -24,7 +24,7 @@ The rules are simple. You have to guess a number between 1 and {:_}
 of guesses wins.
 """
 
-_ABSOLUTE_MAX_NUMBER = 100_000
+_ABSOLUTE_MAX_NUMBER = 1_000_000
 _ABSOLUTE_MAX_QUESTIONS = 1_000_000
 
 
