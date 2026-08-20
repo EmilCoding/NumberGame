@@ -13,9 +13,6 @@ from typing import Any
 from abc import ABC, abstractmethod
 
 
-DEFAULT_MAX_NUMBER = 1_000
-DEFAULT_MAX_QUESTIONS = 1_000
-DEFALT_MAX_USERINPUT_ATTEMPS = 100
 INTRO_PROMP = """
 Welcome to the number game.
 --------------------------
@@ -26,7 +23,7 @@ of guesses wins.
 """
 _ABSOLUTE_MAX_NUMBER = 1_000_000
 _ABSOLUTE_MAX_QUESTIONS = 3_000_000
-_ABSOLUTE_MAX_USERINPUT_ATTEMPS = DEFALT_MAX_USERINPUT_ATTEMPS
+_ABSOLUTE_MAX_USERINPUT_ATTEMPS = 100
 
 
 class Signal(enum.StrEnum):
@@ -72,13 +69,6 @@ class UI(ABC):
 
 
 class Game:
-    """A configurable number-guessing game played through injected I/O hooks.
-
-    The class encapsulates the random target generation, user prompt loop, and
-    win/loss reporting. The default interface uses Python's built-in ``input`` and
-    ``print`` functions, but other callables can be supplied to integrate with
-    tests or external UI layers.
-    """
     ui: UI
     max_target: int
     max_questions: int
@@ -88,26 +78,23 @@ class Game:
         self,
         ui: UI,
         /,
-        max_target: int = DEFAULT_MAX_NUMBER,
-        max_questions: int = DEFAULT_MAX_QUESTIONS,
-        max_userinput_attempts: int = DEFALT_MAX_USERINPUT_ATTEMPS
+        max_target: int = 1_000,
+        max_questions: int = 3_000,
+        max_userinput_attempts: int = 100,
     ) -> None:
-        """Create a number game with configurable bounds and I/O callbacks.
+        """Initiallize Game object with a reference to a User-Interface.
 
         Args:
             ui: Interface between user and game.
-            max_target: Largest secret number that can be generated.
-            max_question: Maximum number of guesses allowed for a round.
-            max_userinput_attempts (int): Maximum number of attempts given to the user when getting input.
-
-        Raises:
-            AssertionError: If any configuration value is not a positive integer.
+            max_target (int): Largest secret number that can be generated. Default is 1000.
+            max_question (int): Maximum number of guesses allowed for a round. Default is 3000.
+            max_userinput_attempts (int): Maximum number of attempts given to the user when getting input. Default is 100.
         """
         self.ui = ui
         self.max_target = validate_integer(max_target, _ABSOLUTE_MAX_NUMBER, 'max_target')
         self.max_questions = validate_integer(max_questions, _ABSOLUTE_MAX_QUESTIONS, 'max_questions')
         self.max_userinput_attempts = validate_integer(max_userinput_attempts, _ABSOLUTE_MAX_USERINPUT_ATTEMPS, 'max_userinput_attempts')
-        self.ui.maximum_target = max_target
+        self.ui.restart(self.max_target)
 
     def run(self) -> None | int:
         """Run a full game round and return the final score if the player wins.
@@ -201,18 +188,6 @@ class Game:
         return random.randint(1, self.max_target)
 
 
-class PlayerUI(UI):
-
-    def get_guess(self, prompt: str) -> str:
-        return input(prompt)
-
-    def provide_feedback(self, signal: Signal, prompt: str) -> None:
-        self.echo(prompt)
-
-    def echo(self, message: str) -> None:
-        print(message)
-
-
 def validate_integer(value: Any, max_value: int, field_name: str) -> int:
     if not isinstance(value, int):
         raise TypeError(f'{field_name} must be a positive integer. Was given as {type(value)}')
@@ -224,8 +199,3 @@ def validate_integer(value: Any, max_value: int, field_name: str) -> int:
                       + colorama.Fore.RESET)
         return max_value
     return value
-
-
-if __name__ == '__main__':
-    game = Game(PlayerUI())
-    game.run()

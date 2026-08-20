@@ -1,5 +1,6 @@
 """Run a game using the standard settings."""
-from numbergame.game import Game, PlayerUI
+from numbergame.game import Game
+from numbergame.player import CLI
 
-player = PlayerUI()
+player = CLI()
 Game(player).run()
