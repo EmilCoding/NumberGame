@@ -108,5 +108,5 @@ if __name__ == '__main__':
     max_value = 100
 
     bot = BinarySearchBot(output_to_terminal=True)
-    game = Game(bot, maximum_target=max_value)
+    game = Game(bot, max_target=max_value)
     game.run()

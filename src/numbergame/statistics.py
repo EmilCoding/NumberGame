@@ -99,7 +99,7 @@ if __name__ == '__main__':
     from numbergame.bots import BinarySearchBot
 
     bot = BinarySearchBot(output_to_terminal=True)
-    game = Game(bot, maximum_target=100)
+    game = Game(bot, max_target=100)
 
     sample = [game.run() for _ in range(100)]
 

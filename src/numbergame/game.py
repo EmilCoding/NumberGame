@@ -9,12 +9,13 @@ import enum
 import random
 import colorama
 import warnings
-from typing import Any, Callable
+from typing import Any
 from abc import ABC, abstractmethod
 
 
 DEFAULT_MAX_NUMBER = 1_000
 DEFAULT_MAX_QUESTIONS = 1_000
+DEFALT_MAX_USERINPUT_ATTEMPS = 100
 INTRO_PROMP = """
 Welcome to the number game.
 --------------------------
@@ -23,16 +24,18 @@ The rules are simple. You have to guess a number between 1 and {:_}
 (both limits included.) You do this in a series of rounds. Lowest number
 of guesses wins.
 """
-
 _ABSOLUTE_MAX_NUMBER = 1_000_000
-_ABSOLUTE_MAX_QUESTIONS = 1_000_000
+_ABSOLUTE_MAX_QUESTIONS = 3_000_000
+_ABSOLUTE_MAX_USERINPUT_ATTEMPS = DEFALT_MAX_USERINPUT_ATTEMPS
 
 
 class Signal(enum.StrEnum):
     TOO_LOW = enum.auto()
     TOO_HIGH = enum.auto()
+    CORRECT = enum.auto()
     OUT_OF_RANGE = enum.auto()
-    COULD_NOT_INTERPRET_ANSWER = enum.auto()
+    ANSWER_ACCEPTED = enum.auto()
+    UNACCEPTABLE_ANSWER = enum.auto()
 
 
 class MaxAttempts(Exception):
@@ -48,6 +51,26 @@ class MaxAttempts(Exception):
         super().__init__(f"Failed after {attempts} attempts.")
 
 
+class UI(ABC):
+    maximum_target: int
+
+    def restart(self, maximum_target: int) -> None:
+        """Reset user interface before running a game."""
+        self.maximum_target = maximum_target
+
+    @abstractmethod
+    def get_guess(self, prompt: str) -> int | str:
+        """Request a guesses from the player."""
+
+    @abstractmethod
+    def provide_feedback(self, signal: Signal, prompt: str) -> None:
+        """Provide feedback to the user regarding their guess."""
+
+    @abstractmethod
+    def echo(self, message: str) -> None:
+        """Echo a message to the user"""
+
+
 class Game:
     """A configurable number-guessing game played through injected I/O hooks.
 
@@ -57,38 +80,34 @@ class Game:
     tests or external UI layers.
     """
     ui: UI
-    ui_input_getter: Callable[[str], str]
-    ui_output: Callable[[str], None]
+    max_target: int
+    max_questions: int
+    max_userinput_attempts: int
 
-    max_target: int = DEFAULT_MAX_NUMBER
-    max_question: int = DEFAULT_MAX_QUESTIONS
-
-    def __init__(self, ui: UI, /, maximum_target: int = DEFAULT_MAX_NUMBER, max_question: int = DEFAULT_MAX_QUESTIONS) -> None:
+    def __init__(
+        self,
+        ui: UI,
+        /,
+        max_target: int = DEFAULT_MAX_NUMBER,
+        max_questions: int = DEFAULT_MAX_QUESTIONS,
+        max_userinput_attempts: int = DEFALT_MAX_USERINPUT_ATTEMPS
+    ) -> None:
         """Create a number game with configurable bounds and I/O callbacks.
 
         Args:
             ui: Interface between user and game.
-            maximum_target: Largest secret number that can be generated.
+            max_target: Largest secret number that can be generated.
             max_question: Maximum number of guesses allowed for a round.
+            max_userinput_attempts (int): Maximum number of attempts given to the user when getting input.
 
         Raises:
             AssertionError: If any configuration value is not a positive integer.
         """
         self.ui = ui
-        self.max_target = maximum_target
-        self.max_question = max_question
-
-        assert is_positive_integer(maximum_target), "'max_target' must be a positive integer."
-        assert is_positive_integer(max_question), "'max_question' must be a positive integer."
-
-        if self.max_target > _ABSOLUTE_MAX_NUMBER:
-            self.max_target = _ABSOLUTE_MAX_NUMBER
-            warnings.warn(colorama.Fore.YELLOW + "Given 'max-target' was too high. Lowered it to an acceptable level" + colorama.Fore.RESET)
-        if self.max_question > _ABSOLUTE_MAX_QUESTIONS:
-            self.max_question = _ABSOLUTE_MAX_QUESTIONS
-            warnings.warn(colorama.Fore.YELLOW + "Given 'max-questions' was too high. Lowered it to an acceptable level" + colorama.Fore.RESET)
-
-        self.ui.maximum_target = maximum_target
+        self.max_target = validate_integer(max_target, _ABSOLUTE_MAX_NUMBER, 'max_target')
+        self.max_questions = validate_integer(max_questions, _ABSOLUTE_MAX_QUESTIONS, 'max_questions')
+        self.max_userinput_attempts = validate_integer(max_userinput_attempts, _ABSOLUTE_MAX_USERINPUT_ATTEMPS, 'max_userinput_attempts')
+        self.ui.maximum_target = max_target
 
     def run(self) -> None | int:
         """Run a full game round and return the final score if the player wins.
@@ -131,10 +150,14 @@ class Game:
         Returns:
             The guess count on success, otherwise ``None``.
         """
-        for score in range(1, self.max_question + 1):
-            if target == (userinput := self._get_guess_from_user()):
+        for score in range(1, self.max_questions + 1):
+            userinput = self._get_guess_from_user()
+            if target == userinput:
+                self.ui.provide_feedback(Signal.CORRECT, f"Guess {userinput} is correct!")
                 return score
-            if userinput < target:
+            if not 0 <= userinput <= self.max_target:
+                self.ui.provide_feedback(Signal.OUT_OF_RANGE, f"Guess {userinput} is of out of range [1, {self.max_target}]")
+            elif userinput < target:
                 self.ui.provide_feedback(Signal.TOO_LOW, f"Guess {userinput} was too low")
             else:
                 self.ui.provide_feedback(Signal.TOO_HIGH, f"Guess {userinput} was too high")
@@ -152,36 +175,30 @@ class Game:
         Raises:
             MaxAttempts: If the input loop exceeds the configured guess limit.
         """
-        for attempts in range(1, self.max_question + 1):
+        for attempts in range(1, self.max_userinput_attempts + 1):
+            rawinput = self.ui.get_guess('Please enter an integer: ')
             try:
-                return int(rawinput := self.ui.get_guess('Please enter an integer: '))
-            except ValueError:
-                self.ui.provide_feedback(Signal.COULD_NOT_INTERPRET_ANSWER, f"Cannot intepret {rawinput} as a string - Please try again")
+                integer = self._interpret_as_integer(rawinput)
+                self.ui.provide_feedback(Signal.ANSWER_ACCEPTED, "Ansert acceptable")
+                return integer
+            except ValueError, TypeError:
+                self.ui.provide_feedback(Signal.UNACCEPTABLE_ANSWER, f"Cannot intepret {rawinput} as a string - Please try again")
         raise MaxAttempts(attempts)
+
+    def _interpret_as_integer(self, __input: Any) -> int:
+        match __input:
+            case int():
+                return __input
+            case str():
+                return int(__input)
+            case float():
+                raise TypeError('Floating point valued guesses are not allowed')
+            case _:
+                raise ValueError(f'Cannot handle the input type {type(__input)}')
 
     def _generate_random_target_number(self) -> int:
         """Generate a random target in the inclusive range [1, max_target]."""
         return random.randint(1, self.max_target)
-
-
-class UI(ABC):
-    maximum_target: int
-
-    def restart(self, maximum_target: int) -> None:
-        """Reset user interface before running a game."""
-        self.maximum_target = maximum_target
-
-    @abstractmethod
-    def get_guess(self, prompt: str) -> int | str:
-        """Request a guesses from the player."""
-
-    @abstractmethod
-    def provide_feedback(self, signal: Signal, prompt: str) -> None:
-        """Provide feedback to the user regarding their guess."""
-
-    @abstractmethod
-    def echo(self, message: str) -> None:
-        """Echo a message to the user"""
 
 
 class PlayerUI(UI):
@@ -196,8 +213,17 @@ class PlayerUI(UI):
         print(message)
 
 
-def is_positive_integer(n: Any) -> bool:
-    return isinstance(n, int) and n > 0
+def validate_integer(value: Any, max_value: int, field_name: str) -> int:
+    if not isinstance(value, int):
+        raise TypeError(f'{field_name} must be a positive integer. Was given as {type(value)}')
+    if value <= 0:
+        raise ValueError(f'{field_name} must be a positive integer. {value=}')
+    if value > max_value:
+        warnings.warn(colorama.Fore.YELLOW
+                      + f"Given {field_name} was too high. Lowered it to an acceptable level"
+                      + colorama.Fore.RESET)
+        return max_value
+    return value
 
 
 if __name__ == '__main__':
