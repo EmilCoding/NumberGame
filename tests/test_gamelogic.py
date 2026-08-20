@@ -197,9 +197,9 @@ def test_too_many_guesses(max_questions: int):
 
 
 @pytest.mark.parametrize('guess,signal', [
-    (1, Signal.TOO_LOW),
-    (6, Signal.TOO_HIGH),
-    (5, Signal.CORRECT),
+    (1, Signal.GUESS_TOO_LOW),
+    (6, Signal.GUESS_TOO_HIGH),
+    (5, Signal.CORRECT_GUESS),
     (-1, Signal.OUT_OF_RANGE),
     (20, Signal.OUT_OF_RANGE),
 ])

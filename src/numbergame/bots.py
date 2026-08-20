@@ -79,9 +79,9 @@ class BinarySearchBot(Bot):
 
         assert self.last_answer, "Bot must have guessed before getting feedback"
         match signal:
-            case Signal.TOO_LOW:
+            case Signal.GUESS_TOO_LOW:
                 self.lower_limit = self.last_answer
-            case Signal.TOO_HIGH:
+            case Signal.GUESS_TOO_HIGH:
                 self.upper_limit = self.last_answer
             case Signal():
                 pass

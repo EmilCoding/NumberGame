@@ -27,9 +27,9 @@ _ABSOLUTE_MAX_USERINPUT_ATTEMPS = 100
 
 
 class Signal(enum.StrEnum):
-    TOO_LOW = enum.auto()
-    TOO_HIGH = enum.auto()
-    CORRECT = enum.auto()
+    GUESS_TOO_LOW = enum.auto()
+    GUESS_TOO_HIGH = enum.auto()
+    CORRECT_GUESS = enum.auto()
     OUT_OF_RANGE = enum.auto()
     ANSWER_ACCEPTED = enum.auto()
     UNACCEPTABLE_ANSWER = enum.auto()
@@ -51,9 +51,9 @@ class MaxAttempts(Exception):
 class UI(ABC):
     maximum_target: int
 
-    def restart(self, maximum_target: int) -> None:
+    def restart(self, max_target: int) -> None:
         """Reset user interface before running a game."""
-        self.maximum_target = maximum_target
+        self.maximum_target = max_target
 
     @abstractmethod
     def get_guess(self, prompt: str) -> int | str:
@@ -140,14 +140,14 @@ class Game:
         for score in range(1, self.max_questions + 1):
             userinput = self._get_guess_from_user()
             if target == userinput:
-                self.ui.provide_feedback(Signal.CORRECT, f"Guess {userinput} is correct!")
+                self.ui.provide_feedback(Signal.CORRECT_GUESS, f"Guess {userinput} is correct!")
                 return score
             if not 0 <= userinput <= self.max_target:
                 self.ui.provide_feedback(Signal.OUT_OF_RANGE, f"Guess {userinput} is of out of range [1, {self.max_target}]")
             elif userinput < target:
-                self.ui.provide_feedback(Signal.TOO_LOW, f"Guess {userinput} was too low")
+                self.ui.provide_feedback(Signal.GUESS_TOO_LOW, f"Guess {userinput} was too low")
             else:
-                self.ui.provide_feedback(Signal.TOO_HIGH, f"Guess {userinput} was too high")
+                self.ui.provide_feedback(Signal.GUESS_TOO_HIGH, f"Guess {userinput} was too high")
         return None
 
     def _get_guess_from_user(self) -> int:
