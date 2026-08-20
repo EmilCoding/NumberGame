@@ -8,7 +8,7 @@ class DoNotCompute(Exception):
     pass
 
 
-class CannotInterpretText(ValueError):
+class CannotInterpretSignal(ValueError):
     pass
 
 
@@ -78,13 +78,15 @@ class BinarySearchBot(Bot):
             print(prompt)
 
         assert self.last_answer, "Bot must have guessed before getting feedback"
-        if signal is Signal.TOO_LOW:
-            self.lower_limit = self.last_answer
-            return
-        if signal is Signal.TOO_HIGH:
-            self.upper_limit = self.last_answer
-            return
-        raise CannotInterpretText(f'Could not interpret {prompt}')
+        match signal:
+            case Signal.TOO_LOW:
+                self.lower_limit = self.last_answer
+            case Signal.TOO_HIGH:
+                self.upper_limit = self.last_answer
+            case Signal():
+                pass
+            case _:
+                raise CannotInterpretSignal(f'BinaryBot does not know how to handle {signal} - ("{prompt}")')
 
 
 class CheatBot(Bot):
