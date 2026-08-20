@@ -18,8 +18,6 @@ class TreeNode:
 
 def main():
     assert (tree := sortedListToTree(ARRAY))
-
-
     g = nx.Graph()
 
     g.add_nodes_from(ARRAY)
@@ -30,7 +28,6 @@ def main():
     fig, ax = plt.subplots()
     nx.draw(g, pos, ax, with_labels=True, node_size=1_000, font_size=15)
     fig.savefig('binarySearchTree.png', dpi=600)
-
 
 
 def sortedListToTree(array: list[int]) -> None | TreeNode:
@@ -78,6 +75,7 @@ def get_position(n: int, tree: TreeNode) -> tuple[float, float]:
 
 def get_edges(tree: TreeNode) -> list[tuple[int, int]]:
     edges: list[tuple[int, int]] = []
+
     def dfs(node: TreeNode) -> None:
         if node.left:
             edges.append((node.value, node.left.value))

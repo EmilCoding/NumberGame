@@ -42,7 +42,7 @@ class UIWithDeterminedOutput(UI):
 
     def restart(self, maximum_target: int) -> None:
         self.n_guess_calls = 0
-        self.maximum_target = maximum_target
+        self.max_target = maximum_target
         self.guess_generator = (x for x in self.guess_queue)
         self.feedback_signals = []
 
@@ -83,6 +83,7 @@ def test_inforce_integer_range(field: str, value: int, ):
         Game(UIWithDeterminedOutput(), **kwargs)
     assert isinstance(error.value, (TypeError, ValueError)), "An expection was raised but not the correct one"
 
+
 @pytest.mark.parametrize('field,max_value', [
     ('max_target', _ABSOLUTE_MAX_NUMBER),
     ('max_questions', _ABSOLUTE_MAX_QUESTIONS),
@@ -92,6 +93,7 @@ def test_set_maximum_cap_on_options(monkeypatch, field: str, max_value: int):
     """Test if options are capped at their maximum values and a warning is raised"""
     # Setup monkeypatch
     called = False
+
     def mockwarn(*arg, **kwargs):
         nonlocal called
         called = True
@@ -101,6 +103,7 @@ def test_set_maximum_cap_on_options(monkeypatch, field: str, max_value: int):
     game = Game(UIWithDeterminedOutput(), **kwargs)
     assert max_value == game.__getattribute__(field), "Field has not forced to max. value"
     assert called, "Warning was not raised"
+
 
 # ============================================================================================================================ #
 # Test the method Game._generation_of_target_number                                                                            #

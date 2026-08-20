@@ -8,7 +8,8 @@ exclude =
     docs/source/conf.py,
     old,
     build,
-    dist
+    dist,
+    scripts
 
 per-file-ignores =
     # imported but unused

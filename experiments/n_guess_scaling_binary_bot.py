@@ -21,8 +21,12 @@ stds = np.array([data.std for data in dataset.values()])
 
 # Fit to logarithmic model
 x = np.linspace(sizes.min(), sizes.max())
+
+
 def fitfunc(log2x, a: float, b: float):
     return a*log2x + b
+
+
 (a, b), pcov, *_ = curve_fit(fitfunc, np.log2(sizes), means, sigma=stds)
 
 

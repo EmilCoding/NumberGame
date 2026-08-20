@@ -14,7 +14,7 @@ class CannotInterpretSignal(ValueError):
 
 class Bot(UI, ABC):
     """Bot that is able to play `The Number Game`"""
-    maximum_target: int
+    max_target: int
 
     def __init__(self, /, output_to_terminal: bool = False) -> None:
         self.output_to_terminal = output_to_terminal
@@ -38,8 +38,8 @@ class RandoBot(Bot):
     """Makes a random guess within the bounds set by the game [1, maximum_target]"""
 
     def get_guess(self, _: str) -> int:
-        assert self.maximum_target, "Maximum target must be provided before playing the game."
-        return random.randint(1, self.maximum_target)
+        assert self.max_target, "Maximum target must be provided before playing the game."
+        return random.randint(1, self.max_target)
 
 
 class LinearSearchBot(Bot):
@@ -54,6 +54,20 @@ class LinearSearchBot(Bot):
         return self.guesser.__next__()
 
 
+class RandoBotWithMemory(Bot):
+    possible_guesses: list[int]
+
+    def restart(self, max_target: int) -> None:
+        self.max_target = max_target
+        self.possible_guesses = list(range(1, max_target + 1))
+        random.shuffle(self.possible_guesses)
+
+    def get_guess(self, _: str) -> int:
+        if not self.possible_guesses:
+            raise ValueError('Ran out of guesses')
+        return self.possible_guesses.pop()
+
+
 class BinarySearchBot(Bot):
     """Uses a binary search approach to guess the number."""
     lower_limit: int
@@ -63,12 +77,12 @@ class BinarySearchBot(Bot):
     def restart(self, maximum_target: int) -> None:
         super().restart(maximum_target)
         self.lower_limit = 1
-        self.upper_limit = self.maximum_target
+        self.upper_limit = self.max_target
         self.last_answer = None
 
     def get_guess(self, _: str) -> int:
         """Request a guesses from the player."""
-        self.upper_limit = self.upper_limit or self.maximum_target or _ABSOLUTE_MAX_NUMBER
+        self.upper_limit = self.upper_limit or self.max_target or _ABSOLUTE_MAX_NUMBER
         self.last_answer = (self.lower_limit + self.upper_limit) // 2
         return self.last_answer
 
@@ -102,13 +116,13 @@ class CheatBot(Bot):
         return self.answer
 
 
-ALL_BOT_TYPES: list[type[Bot]] = [RandoBot, LinearSearchBot, BinarySearchBot]
+ALL_BOT_TYPES: list[type[Bot]] = [RandoBot, RandoBotWithMemory, LinearSearchBot, BinarySearchBot]
 
 
 if __name__ == '__main__':
     from numbergame import Game
     max_value = 100
 
-    bot = BinarySearchBot(output_to_terminal=True)
+    bot = RandoBotWithMemory(output_to_terminal=True)
     game = Game(bot, max_target=max_value)
     game.run()

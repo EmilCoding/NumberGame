@@ -49,11 +49,11 @@ class MaxAttempts(Exception):
 
 
 class UI(ABC):
-    maximum_target: int
+    max_target: int
 
     def restart(self, max_target: int) -> None:
         """Reset user interface before running a game."""
-        self.maximum_target = max_target
+        self.max_target = max_target
 
     @abstractmethod
     def get_guess(self, prompt: str) -> int | str:
