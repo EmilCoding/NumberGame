@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
 
-from numbergame.game import Game
 from numbergame.bots import BinarySearchBot
-from numbergame.statistics import RunStatistics
+from numbergame.statistics import run_experiment
 
-bot = BinarySearchBot()
-game = Game(bot, max_target=1000)
-
-dataset = RunStatistics(BinarySearchBot, [game.run() for _ in range(10_000)])
-fig, ax = dataset.plot()
+dataset = run_experiment(BinarySearchBot, 1_000, 10_000)
+fig, ax, _ = dataset.plot()
 plt.show()

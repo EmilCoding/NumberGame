@@ -3,20 +3,18 @@ import matplotlib.pyplot as plt
 
 from scipy.optimize import curve_fit
 
-from numbergame.game import Game
 from numbergame.bots import BinarySearchBot
-from numbergame.statistics import RunStatistics
+from numbergame.statistics import performance_scaling
 
-bot = BinarySearchBot()
 
-dataset: dict[int, RunStatistics] = {}
-for gamesize in [10, 50, 100, 500, 1_000, 5_000, 10_000]:
-    print(f"Run experiment for gamesize: {gamesize}")
-    game = Game(bot, max_target=gamesize)
-    dataset[gamesize] = RunStatistics(BinarySearchBot, [game.run() for _ in range(10_000)])
-sizes = np.array(list(dataset))
-means = np.array([data.mean for data in dataset.values()])
-stds = np.array([data.std for data in dataset.values()])
+
+sizes = np.array([10, 50, 100, 500, 1_000, 5_000, 10_000])
+results = performance_scaling(BinarySearchBot, 
+                              [10, 50, 100, 500, 1_000, 5_000, 10_000],
+                              10_000,
+                              )
+means = np.array([result.mean for result in results])
+stds = np.array([result.std for result in results])
 
 
 # Fit to logarithmic model

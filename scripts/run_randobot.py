@@ -1,12 +1,8 @@
 import matplotlib.pyplot as plt
 
-from numbergame.game import Game
 from numbergame.bots import RandoBot
-from numbergame.statistics import RunStatistics
+from numbergame.statistics import run_experiment
 
-bot = RandoBot()
-game = Game(bot, max_target=1000)
-
-dataset = RunStatistics(RandoBot, [game.run() for _ in range(10_000)])
-fig, ax = dataset.plot()
+dataset = run_experiment(RandoBot, 1_000, 10_000)
+fig, ax, _ = dataset.plot()
 plt.show()
